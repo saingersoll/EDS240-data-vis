@@ -1,0 +1,47 @@
+---
+title: "Lecture 1.3 Notebook"
+date: 2024-01-08
+author: Sofia Ingersoll 
+---
+## Packages
+```{r message = FALSE}
+library(tidyverse)
+```
+
+## Tidy Data
+
+### Dirty Data
+
+Let's make some untidy data to wrangle with.
+
+Remember, a plot typically requires an x and y axis. In this case, what is our x and y? Do we have more than 2 varibles?
+
+#### What makes this data untidy?
+- Each row has more than one observation. We need each observation to make up an entire row.
+
+#### What are we recording? 
+- Temperature values need to have its own column.
+- An Station ID column should also be included as a column because this is also a variable.
+```{r}
+# untidy data ----
+temp_data_wide <- tribble(
+  ~date, ~station1, ~station2,  ~station3,
+  "2023-10-01", 30.1, 29.8,  31.2,
+  "2023-11-01", 28.6, 29.1,  33.4,
+  "2023-12-01", 29.9, 28.5,  32.3
+)
+```
+
+### Making it Tidy!
+
+We are going to use `pivot_longer` from the tidyr package to clean our data. 
+```{r}
+# any column name including station, pivot
+# and put them in a new column using names_to our new station_id column
+# finally, move the values from the old station columns into a new column by the name of temp_c
+temp_data_long <- temp_data_wide %>% 
+  pivot_longer(cols = starts_with('station'),
+               names_to = 'station_id',
+               values_to = 'temp_c')
+```
+
