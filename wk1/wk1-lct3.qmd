@@ -6,6 +6,7 @@ author: Sofia Ingersoll
 ## Packages
 ```{r message = FALSE}
 library(tidyverse)
+library(palmerpenguins)
 ```
 
 ## Tidy Data
@@ -44,4 +45,66 @@ temp_data_long <- temp_data_wide %>%
                names_to = 'station_id',
                values_to = 'temp_c')
 ```
+
+## Plot 1
+
+Today, we're going to be working with the `palmerpenguins` package data, `penguins`.
+
+```{r}
+# This is giving us the structure of our data set
+str(penguins)
+```
+
+#### Mapping color Globally
+To have the species organized by color, this command must be within aes(). This can be done in either aes sections.
+```{r}
+ggplot(data = na.omit(penguins),
+       mapping = aes(x = bill_length_mm,
+                     y = bill_depth_mm)) +
+  geom_point(aes(col = species),
+             alpha = .5) +
+  geom_smooth(method = 'lm') +
+  scale_color_manual(values = c('hotpink','plum','magenta'))
+```
+#### Mapping color locally 
+Take note of how the mapping is listed first for this function. 
+
+This should provide individual linear regression lines
+```{r}
+ggplot() +
+  geom_point(aes(x = bill_length_mm,
+                 y = bill_depth_mm,
+                 col = species),
+             data = na.omit(penguins),
+             alpha = .5) +
+  geom_smooth(method = 'lm')
+```
+
+
+```{r}
+ggplot(na.omit(penguins), aes(x = body_mass_g,
+                     y = flipper_length_mm,
+                     color = body_mass_g)) +
+  geom_point() +
+  scale_color_gradient(low = "pink", high = 'purple')
+```
+## Plot 2
+Overriding geom_bar's stat:
+```{r}
+penguins_summary <- penguins %>% 
+  count(species)
+
+```
+
+```{r}
+colors =  c('cyan', 'limegreen', 'magenta')
+
+ggplot(penguins_summary, aes(x = species,
+                              y = n,
+                              col = species)) +
+  geom_bar(stat = 'identity',
+           fill = colors) +
+  scale_color_manual(values = c('cyan', 'limegreen', 'magenta')) 
+```
+
 
