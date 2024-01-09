@@ -93,7 +93,6 @@ Overriding geom_bar's stat:
 ```{r}
 penguins_summary <- penguins %>% 
   count(species)
-
 ```
 
 ```{r}
@@ -107,4 +106,58 @@ ggplot(penguins_summary, aes(x = species,
   scale_color_manual(values = c('cyan', 'limegreen', 'magenta')) 
 ```
 
+Override default stat mapping:
+
+When using proportion, we need to divide that by the total number of observations in data group in the whole data set.
+```{r}
+ggplot(penguins, aes(x = species, 
+                     y = after_stat(prop),
+                     group = 1)) +
+  geom_bar(fill = colors)
+```
+#### Position Adjustments
+The default in this case is stacking, but using the position argument in geom_bar we can unstack.
+
+- Fill displays the bars at an equal proportion, to better visualization
+
+- Dodge shows the relating bars for each island. A little messier.
+
+- Position = position_argumenthere like:
+position = position_dodge_2(preserve = 'single')
+```{r}
+filling = c('hotpink','plum','magenta')
+
+ggplot(penguins, aes(x = species, fill = island)) +
+  geom_bar(position = 'fill')
+```
+```{r}
+ggplot(penguins, aes(x = species, fill = island)) +
+  geom_bar(position = position_dodge_2(preserve = 'single'))
+```
+
+#### Coordinate Systems
+
+This by default produces the same output that we've previously created
+```{r}
+ggplot(penguins, aes(x = species)) +
+  geom_bar(fill = filling) +
+  coord_cartesian()
+```
+Now, let's flip it!
+```{r}
+ggplot(penguins, aes(x = species)) +
+  geom_bar(fill = filling) +
+  coord_flip()
+```
+Polar Coordinates
+```{r}
+ggplot(penguins, aes(x = species)) +
+  geom_bar(fill = filling) + 
+  coord_polar() + 
+  theme_classic() +
+  theme( # this is where most customization happens
+    axis.title = element_text(size = 17,
+                              color = 'purple')
+  )
+```
 
