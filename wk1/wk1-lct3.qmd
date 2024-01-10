@@ -125,11 +125,23 @@ The default in this case is stacking, but using the position argument in geom_ba
 - Position = position_argumenthere like:
 position = position_dodge_2(preserve = 'single')
 ```{r}
-filling = c('hotpink','plum','magenta')
-
 ggplot(penguins, aes(x = species, fill = island)) +
   geom_bar(position = 'fill')
 ```
+
+Testing colors & positions
+
+```{r}
+filling = c('hotpink','plum','magenta')
+
+ggplot(penguins, aes(x = species, 
+                     fill = island,
+                     colours = filling)) +
+  geom_bar(position = 'fill')
+```
+
+
+
 ```{r}
 ggplot(penguins, aes(x = species, fill = island)) +
   geom_bar(position = position_dodge_2(preserve = 'single'))
