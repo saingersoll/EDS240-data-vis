@@ -1,0 +1,181 @@
+---
+title: "Week 3, Lecture 3.2 Wrangling Practice"
+author: "Sofia Ingersoll"
+date: "2024-01-22"
+---
+
+## Setup
+
+```{r message = FALSE}
+# load libraries
+library(tidyverse)
+library(chron)
+library(naniar)
+library(geofacet)
+```
+# Reading & Data Wrangling
+```{r}
+#..........................import data...........................
+mko <- read_csv("https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-sbc.2007.17&entityid=02629ecc08a536972dec021f662428aa")
+```
+
+
+```{r}
+#..........................wrangle................................
+# check how your df looks using str(mko_clean) in console
+
+mko_clean <- mko %>% 
+  select(year, month, day, decimal_time, Temp_bot) %>% 
+  unite(date, 
+        year, month, day,
+        sep = '-', 
+        remove = FALSE)  %>%                                       # create column called date and glue together the entries from these 3 columns and include a '-' in between the variables united.
+  mutate(time = times(decimal_time))  %>%                          # corrects decimal time to date-time like lubridate
+  unite(date_time,
+        date, time,
+        sep = " ",
+        remove = FALSE) %>% 
+  mutate(date_time = as.POSIXct(date_time, "%Y-%m-%d %H:%M:%S", tz = "GMT"),
+         year = as.factor(year),
+         month = as.factor((month)),
+         day = as.numeric(day)) %>%                                  # convert column to datetime format & use time zone GMT
+  mutate(month_name = as.factor(
+    month.name[month])) %>%                                          # use build in month.name function, index using month column, store as new column month_name
+  naniar::replace_with_na(replace = list(Temp_bot = 9999)) %>% 
+  select(date_time, year, month, day, month_name, Temp_bot)   # select/reorder desired columns ----
+
+#......................explore missing data......................
+
+# counts and percentage of missing data by year ----
+see_NAs <- mko_clean |> 
+  group_by(year) |> 
+  naniar::miss_var_summary() |>
+  filter(variable == "Temp_bot")
+
+# visualize missing Temp_bot ----
+bottom <- mko_clean |> select(Temp_bot)
+missing_temps <- naniar::vis_miss(bottom)
+```
+
+# Histograms
+
+```{r}
+# orignial plot
+og <- mko_clean %>% 
+  mutate(month_name = factor(month_name, levels = month.name))  %>%            # arrange variables in the same order indexed in variable month.name order
+  ggplot() +
+  geom_histogram(aes(x = Temp_bot,
+                 fill = month_name),
+                 position = "identity",
+                 alpha = 0.5)
+
+og
+
+# small multiples
+small_multiples <- mko_clean %>% 
+  mutate(month_name = factor(month_name, levels = month.name))  %>%            # arrange variables in the same order indexed in variable month.name order
+  ggplot() +
+  geom_histogram(aes(x = Temp_bot),
+                 fill = 'skyblue',
+                 position = "identity") +
+  facet_wrap(~month_name)
+
+small_multiples
+```
+
+
+```{r}
+# fewer groups
+small_groups <- mko_clean %>% 
+  mutate(month_name = factor(month_name, levels = month.name))  %>%            # arrange variables in the same order indexed in variable month.name order
+  filter(month_name %in% c('April', 'June', 'October')) %>% 
+  ggplot(aes(x = Temp_bot,
+             fill = month_name)) +
+  geom_histogram(position = "identity",
+                 alpha = 0.5,
+                 color = 'lightgrey',
+                 binwidth = 1) + 
+  scale_fill_manual((values = c("#2C5374", '#ADD8E6', 'skyblue')))
+
+small_groups
+
+
+
+mko_clean %>% 
+  ggplot(aes(x = Temp_bot, palette = month_name)) + 
+  geom_histogram(position = "identity", alpha = 0.5,  color = "black") +
+  scale_fill_manual(values = c("#2C5374", "#ADD8E6", "#8B3A3A"))
+```
+
+```{r}
+mko_clean |> 
+  mutate(month_name = factor(x = month_name, levels = month.name)) |> 
+  ggplot(aes(x = Temp_bot, fill = month_name)) +
+  geom_density(alpha = 0.5)
+```
+```{r}
+mko_clean %>%  
+  mutate(month_name = factor(x = month_name, levels = month.name)) %>%  
+  filter(month_name %in% c('April', 'June', 'October')) %>% 
+  ggplot(aes(x = Temp_bot, fill = month_name)) +
+  geom_density(alpha = 0.5)
+```
+
+### Dummy Data
+
+```{r}
+dummy_data <- data.frame(value = c(rnorm(n = 100, mean = 5),
+                                   rnorm(n = 200, mean = 10)),
+                         group = rep(c("A", "B"),
+                                     times = c(100, 200)))
+
+
+# Visualize with Rug Plot by group
+ggplot(dummy_data, aes(x = value,
+                       fill = group)) +
+  geom_histogram(position = 'identity',
+                 alpha = 0.7) +
+  geom_rug(aes(color = group),                # each line is a single observation
+           alpha = 0.7)
+
+
+# Visualize with Density plot by group 
+ggplot(dummy_data, aes(x = value,
+                       fill = group)) +
+  geom_density(position = 'identity',        # provides insight regarding observation distribution
+                 alpha = 0.7) +
+  geom_rug(aes(color = group),                # each line is a single observation
+           alpha = 0.7)
+
+```
+```{r}
+ggplot(mko_clean, aes(x = Temp_bot, y = after_stat(density))) + # scale down hist to match density curve
+  geom_histogram(fill = "pink", color = "black", alpha = 0.75) +
+  geom_density(size = 1) 
+```
+
+
+```{r}
+library(palmerpenguins)
+
+#.............Faceting by Species to Compare Distribution.....................
+
+# use `after_stat(count)` to plot density of observations ----
+ggplot(penguins, aes(x = body_mass_g, y = after_stat(count))) +
+ 
+  # plot full distribution curve with label "all penguins"; remove 'species' col so that this doesn't get faceted later on ----
+  geom_density(data = select(penguins, -species), 
+               aes(fill = "all penguins"), color = "transparent") +
+  
+  # plot second curve with label "species" ----
+  geom_density(aes(fill = "species"), color = "transparent") +
+  
+  # facet wrap by species ----
+  facet_wrap(~species, nrow = 1) +
+  
+  # update colors, x-axis label, legend position ----
+  scale_fill_manual(values = c("grey","#0C8346"), name = NULL) +
+  labs(x = "Body Mass (g)") +
+  theme(legend.position = "top")
+```
+
