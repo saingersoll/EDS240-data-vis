@@ -12,6 +12,10 @@ library(tidyverse)
 library(chron)
 library(naniar)
 library(geofacet)
+library(see)
+library(gghighlight)
+library(ggbeeswarm)
+library(ggridges)
 ```
 # Reading & Data Wrangling
 ```{r}
@@ -177,5 +181,82 @@ ggplot(penguins, aes(x = body_mass_g, y = after_stat(count))) +
   scale_fill_manual(values = c("grey","#0C8346"), name = NULL) +
   labs(x = "Body Mass (g)") +
   theme(legend.position = "top")
+```
+
+### Ridgeline Plot
+
+```{r}
+ggplot(mko_clean, aes(x = Temp_bot,
+                      y = month_name,
+                      fill = after_stat(x))) +                        # do the stat function transformation and then apply color mapping
+  ggridges::geom_density_ridges_gradient(rel_min_height = 0.01,       # the smaller you get, the more stretched it becomes 
+                                         scale = 3) +                 # this creates overlap of densities  
+  scale_y_discrete(limits = month.name) +
+  scale_fill_gradientn(colors = c('hotpink','lightpink', 'lavender', 'plum', 'purple'))
+
+# within geom_density_ridges
+#jittered_points = TRUE,
+                                        # alpha = 0.5,
+                                       #  point_size = 0.5,
+
+```
+
+### Boxplots
+
+```{r}
+pretty = c('hotpink','lightpink', 'lavender', 'plum', 'purple')
+
+ggplot(mko_clean, aes(x = month_name, y = Temp_bot)) +
+  geom_boxplot() +
+  scale_x_discrete(limits = rev(month.name)) +
+  coord_flip() +
+  gghighlight::gghighlight(month_name == 'October') +             # this will grey out everything not listed
+  theme(
+    legend.position = 'none'
+  )
+
+```
+
+### jitter raw data and dodge groups
+
+```{r}
+penguins %>% 
+  mutate(year = as.factor(year)) %>% 
+  ggplot(aes(x = species,
+             y = body_mass_g,
+             color = year)) +
+  geom_boxplot() +
+  geom_point(alpha = 0.5,
+              position = position_jitterdodge(jitter.width = 0.2)) +
+  coord_flip()
+```
+### Beeswarm Plots
+```{r}
+ggplot(na.omit(penguins), aes(x = species, y = body_mass_g)) +
+  geom_boxplot(outlier.shape = NA) +
+  ggbeeswarm::geom_beeswarm(size = 1) +
+  coord_flip()
+```
+### Violin Plots
+
+```{r}
+ggplot(mko_clean, aes(x = month_name,
+                      y = Temp_bot)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1,
+               color = "hotpink",
+               alpha = 0.5, 
+               outlier.color = "hotpink") +
+  scale_x_discrete(limits = rev(month.name)) +
+  coord_flip()
+```
+### Half-Violin + Half-Dot Plot
+```{r}
+ggplot(penguins, aes(x = species, 
+                     y = bill_length_mm, 
+                     fill = species)) +
+  see::geom_violindot(size_dots = 5,
+                      alpha = 0.5) +
+  theme(legend.position = "none")
 ```
 
