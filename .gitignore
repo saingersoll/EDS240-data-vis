@@ -5,9 +5,11 @@
 # Session Data files
 .RData
 .RDataTmp
+.KEYS.R
 
 # User-specific files
 .Ruserdata
+.KEYS.R
 
 # Example code in package build process
 *-Ex.R
