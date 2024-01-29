@@ -21,7 +21,7 @@ library(here)
 
 
 source(here::here("wk3", 'KEYS.R'))
-census_api_key(censusKEY)
+census_api_key(censusKEY, install = TRUE)
 
 lyme <- read_csv(here('wk3', 'data', 'LD-Case-Counts-by-County-01-20.csv'))
 ```

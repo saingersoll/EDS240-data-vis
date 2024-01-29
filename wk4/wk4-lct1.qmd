@@ -10,3 +10,274 @@ install.packages("ggExtra") # {ggplot2} extension2222 which can be used to add m
 install.packages("ggdensity") # {ggplot2} extension providing more interpretable visualizations of density estimates based on highest density regions (HDRs)
 ```
 
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                                    setup                                 ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```{R}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                                    setup                                 ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#..........................load packages.........................
+library(tidyverse)
+
+#..........................import data...........................
+jobs <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/jobs_gender.csv")
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                                wrangle data                              ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+jobs_clean <- jobs |> 
+  
+  # add cols (needed for dumbbell plot) ----
+mutate(percent_male = 100 - percent_female, # % of females within each industry was already included
+       difference_earnings = total_earnings_male - total_earnings_female) |>  # diff in earnings between M & F
+  
+  # rearrange columns ----
+relocate(year, major_category, minor_category, occupation,
+         total_workers, workers_male, workers_female,
+         percent_male, percent_female,
+         total_earnings, total_earnings_male, total_earnings_female, difference_earnings,
+         wage_percent_of_male) |> 
+  
+  # drop rows with missing earning data ----
+drop_na(total_earnings_male, total_earnings_female) |> 
+  
+  # make occupation a factor ----
+mutate(occupation = as.factor(occupation)) |> 
+  
+  # ---- this next step is for creating our dumbbell plots ----
+
+# classify jobs by percentage male or female ----
+mutate(group_label = case_when(
+  percent_female >= 75 ~ "Occupations that are 75%+ female",
+  percent_female >= 45 & percent_female <= 55 ~ "Occupations that are 45-55% female",
+  percent_male >= 75 ~ "Occupations that are 75%+ male"
+)) 
+```
+
+Let’s first explore the top ten occupations with the highest median earnings in 2016 (full-time workers > 16 years old). The heights of both the bars and lollipops represent the total estimated median earnings (total_earnings). Order them in descending order.
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                    Bar & lollipop plots to visualize rankings             ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Bar Plot
+# Top 10 highest earning occupations and order by total earnings
+jobs_clean |> 
+  filter(year == 2016) |> 
+  slice_max(order_by = total_earnings, n = 10) |>      # keep top 10 jobs with most `total_earnings`
+  ggplot(
+    aes(
+      x = fct_reorder(occupation, total_earnings),     # reorder this column (occupation) as a factor by the other column (total earnings)
+      y = total_earnings,
+      
+    )
+  ) +
+  geom_col() +                                         # creates bar graph with x and y axis. makes   bar height equal to total earnings by each group
+  geom_text(
+    aes(
+      label = scales::dollar(total_earnings),                          # adds $ for values outside of scale functions
+    ),
+    hjust = 1.2,
+    color = 'white'
+  ) +
+  scale_y_continuous(labels = scales::label_currency(accuracy = 1,       # default sets to a $ in front of y axis
+                                                     scale = 0.001,    # reduce the scale of variables by 
+                                                     suffix = 'k')) +  # include unit suffix after observations
+  coord_flip()
+
+
+
+
+# Lollipop Plot
+
+jobs_clean |> 
+  filter(year == 2016) |> 
+  slice_max(order_by = total_earnings, n = 10) |> 
+  ggplot(
+    aes(
+      x = fct_reorder(occupation, total_earnings),
+      y = total_earnings
+    )
+  ) +
+  ggalt::geom_lollipop() +
+  geom_text(
+    aes(
+      label = scales::dollar(total_earnings),                          # adds $ for values outside of scale functions
+    ),
+    hjust = -0.2,
+    color = 'black'
+  ) +
+  scale_y_continuous(labels = scales::label_currency(accuracy = 1,       # default sets to a $ in front of y axis
+                                                     scale = 0.001,    # reduce the scale of variables by 
+                                                     suffix = 'k'),
+                     limits = c(0, 225000)
+  ) +  # include unit suffix after observations
+  coord_flip()
+```
+
+## Pivot longer our wide data
+```{r}
+# 2 groups
+#test2 <-
+jobs_clean |> 
+  filter(year == 2016) |> 
+  slice_max(order_by = total_earnings, n = 10) |>      # keep top 10 jobs with most `total_earnings`
+  pivot_longer(cols = c(total_earnings_male, total_earnings_female),
+               names_to = "group",
+               values_to = "earnings_by_group") %>% 
+  mutate(sex = str_remove(group, pattern = "total_earnings_")) %>% 
+  ggplot(
+    aes(
+      x = fct_reorder(occupation, earnings_by_group),     # reorder this column (occupation) as a factor by the other column (total earnings)
+      y = earnings_by_group,
+      fill = sex
+    )
+  ) +
+  geom_col(position = position_dodge()) +                                         # creates bar graph with x and y axis. makes   bar height equal to total earnings by each group
+  # geom_text(
+  #  aes(
+  #   label = scales::dollar(total_earnings),                          # adds $ for values outside of scale functions
+  #  ),
+  # hjust = 1.2,
+  #color = 'white'
+  #  ) +
+  scale_y_continuous(labels = scales::label_currency(accuracy = 1,       # default sets to a $ in front of y axis
+                                                     scale = 0.001,    # reduce the scale of variables by 
+                                                     suffix = 'k')) +  # include unit suffix after observations
+  coord_flip()
+```
+
+```{r}
+# Lollipop
+jobs_clean |> 
+  filter(year == 2016) |> 
+  slice_max(order_by = total_earnings, n = 10) |>      # keep top 10 jobs with most `total_earnings`
+  pivot_longer(cols = c(total_earnings_male, total_earnings_female),
+               names_to = "group",
+               values_to = "earnings_by_group") %>% 
+  mutate(sex = str_remove(group, pattern = "total_earnings_")) %>% 
+  ggplot(
+    aes(
+      x = fct_reorder(occupation, earnings_by_group),     # reorder this column (occupation) as a factor by the other column (total earnings)
+      y = earnings_by_group,
+      fill = sex
+    )
+  ) +
+  geom_point(aes(col = sex),
+             position = position_dodge(width = 0.5)) +
+  geom_linerange(
+    aes(
+      xmin = occupation,
+      xmax = occupation,
+      ymin = 0,
+      ymax = earnings_by_group,
+      col = sex
+    ),
+    position = position_dodge(width = 0.5)
+  ) +
+  coord_flip()
+
+```
+
+## Dumbell Plot
+
+```{r}
+#....guarantee the same random samples each time we run code.....
+set.seed(0)
+
+#.........get 10 random jobs that are 75%+ female (2016).........
+f75 <- jobs_clean |> 
+  filter(year == 2016, 
+         group_label == "Occupations that are 75%+ female") |> 
+  slice_sample(n = 10)
+
+#..........get 10 random jobs that are 75%+ male (2016)..........
+m75 <- jobs_clean |> 
+  filter(year == 2016, 
+         group_label == "Occupations that are 75%+ male") |> 
+  slice_sample(n = 10)
+
+#........get 10 random jobs that are 45-55%+ female (2016).......
+f50 <- jobs_clean |> 
+  filter(year == 2016, 
+         group_label == "Occupations that are 45-55% female") |> 
+  slice_sample(n = 10)
+
+#.......combine dfs & relevel factors (for plotting order).......
+subset_jobs <- rbind(f75, m75, f50) |> 
+  mutate(group_label = fct_relevel(group_label,
+                                   "Occupations that are 75%+ female", 
+                                   "Occupations that are 45-55% female", 
+                                   "Occupations that are 75%+ male")) 
+
+#Create dumbbell plot
+# initialize plot (we'll map our aesthetics locally for each geom, below) ----
+ggplot(subset_jobs) +
+  
+  # create dumbbells ----
+geom_segment(aes(x = total_earnings_female,                    # start point of x axis
+                 xend = total_earnings_male,                   # end point of x axis
+                 y = fct_reorder(occupation, total_earnings),  # reorder occupation by avg_salary here
+                 yend = occupation)) +                         # set length of y axis
+  geom_point(aes(x = total_earnings_male,                    
+                 y = occupation),                              # point to represent male total earnings by occupation
+             color = "#CD93D8",
+             size = 2.5) +
+  geom_point(aes(x = total_earnings_female,       
+                 y = occupation),                              # point to represent female total earnings by occupation
+             color = "#6A1E99",
+             size = 2.5) +
+  
+  # facet wrap by group ----
+facet_wrap(~group_label, 
+           nrow = 3,
+           scales = "free_y") +                          # "free_y" plots only the axis labels that exist in each group
+  
+  # axis breaks & $ labels ----
+scale_x_continuous(labels = scales::label_dollar(scale = 0.001,
+                                                 suffix = "k"),
+                   breaks = c(25000, 50000, 75000, 100000, 125000)) +
+  labs(title = 'Exploring Gender Wage Disparities by Occupation',
+       x = "Total earnings ($)",
+       y = "Occupation Title"
+       )
+
+#Dumbbell plot output
+#There are definitely some additional modifications we would need to make before calling this plot done (e.g. adding a title, legend information, theme) – we’ll come back to that in a later lecture.
+
+17 / 20
+```
+
+
+
+
+
+
+
+
+
+Make space for long x-axis labels
+Give those long x-axis labels some breathing room using coord_flip(), which flips cartesian (x,y) coordinates so that the horizontal becomes the vertical and vice versa.
+```{r}
+jobs_clean |> 
+  filter(year == 2016) |> 
+  slice_max(order_by = total_earnings, n = 10) |> 
+  ggplot(aes(x = occupation, y = total_earnings)) +
+  geom_col() +
+  coord_flip()
+
+
+jobs_clean |> 
+  filter(year == 2016) |> 
+  slice_max(order_by = total_earnings, n = 10) |> 
+  ggplot(aes(x = occupation, y = total_earnings)) +
+  ggalt::geom_lollipop() +
+  coord_flip()
+
+
+5 / 20
+
+```
