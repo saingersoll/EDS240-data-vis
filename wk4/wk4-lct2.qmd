@@ -100,6 +100,42 @@ stream_chem_data %>%
     )
   ) + 
   geom_point(alpha = 0.5) +
-  scale_size(range = c(1,10))        # scales bubbles by area this is most appropriate and is less deceiving to the eye
+  scale_size(range = c(1,10))        # scales bubles by area this is most appropriate and is less deciving to the eye
+```
+```{r}
+ggplot(stream_chem_data,
+       aes(
+         x = SO4,
+         y = pH,
+         color = site
+       )) +
+  geom_point(alpha = 0.5,
+             size = 0.5) +
+  geom_rug()
+
+
+
+# binned 2d plot of heatmaps ----
+ggplot(stream_chem_data,
+       aes(
+         x = SO4,
+         y = pH
+       )) +
+  geom_bin2d() +
+  scale_fill_colorhex_c()
+
+
+# hex map
+ggplot(stream_chem_data,
+       aes(
+         x = SO4,
+         y = pH
+       )) +
+  geom_hex() +
+  scale_fill_colorhex_c() +
+  guides(fill = guide_colorbar(title = 'Count',
+                               barwidth = 1,
+                               barheight = 15))
+
 ```
 
