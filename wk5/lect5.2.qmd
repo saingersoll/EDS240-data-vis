@@ -1,0 +1,142 @@
+# Colors
+
+Best random color generator:https://coolors.co
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+```
+## Contor palette plot
+```{r}
+cat_color_plot <- ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species, shape = species)) +
+  geom_point(size = 4, alpha = 0.8)
+
+cat_color_plot 
+```
+
+```{r}
+cont_color_plot <- ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = body_mass_g)) +
+  geom_point(size = 4, alpha = 0.8) 
+
+cont_color_plot 
+```
+## Viridis for Discrete Values
+Viridis contains 90% all colorblind friendly palettes
+```{r}
+cat_color_plot +
+  scale_color_viridis_d(option = "rocket") 
+```
+#### Color matching based on category
+```{r}
+penguins |> 
+  mutate(
+    my_color = case_when(
+      bill_length_mm < 40 ~ "#D7263D",
+      between(bill_length_mm, 40, 50) ~ "#E4BB97",
+      bill_length_mm > 50 ~ "#386150"
+    )
+  ) |> 
+  ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = my_color)) +
+  geom_point(size = 4, alpha = 0.8) +
+  scale_color_identity()
+```
+
+```{r}
+penguins |> 
+  mutate(
+    my_color = case_when(
+      body_mass_g > 6000 ~ "#D7263D",
+      TRUE ~ "gray50"
+    )
+  ) |> 
+  ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = my_color)) +
+  geom_point(size = 4, alpha = 0.8) +
+  scale_color_identity(guide = "legend", 
+                       name = "Body mass (g)",
+                       labels = c(">6000", "<= 6000"))
+```
+
+```{r}
+cont_color_plot +
+  scale_color_viridis_c(option = "magma")
+```
+## RColorBrewer 
+Not necessary to load, but can call using ::
+
+#### See all palette options
+```{r}
+# See all palette options
+RColorBrewer::display.brewer.all()
+```
+#### See all colorblind friendly palette options
+```{r}
+# See all colorblind friendly palette options
+RColorBrewer::display.brewer.all(colorblindFriendly = TRUE)
+```
+#### Store a subset of color palettes for whatever number needed
+```{r}
+mypal <- RColorBrewer::display.brewer.pal(n = 6, name = 'Dark2')
+```
+
+```{r}
+RColorBrewer::brewer.pal(n = 4, name = 'Dark2')
+```
+
+#### Visualize categorical data 
+```{r}
+cat_color_plot +
+  scale_color_brewer(palette = "Dark2") 
+```
+#### Sequential Continous or Unclassed Continuous Palette using Distiller
+Continous Data
+```{r}
+cont_color_plot +
+  scale_color_distiller(palette = "BuPu")
+```
+#### Binned Palette use Fermenter
+Classified Data
+```{r}
+cont_color_plot +
+  scale_color_fermenter(palette = "YlGnBu")
+```
+#### Outline Points
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+
+ggplot(penguins, aes(x = bill_length_mm, 
+                     y = bill_depth_mm, 
+                     fill = body_mass_g)) +            # fill will make the points black
+  geom_point(shape = 21, size = 4, alpha = 0.8) +      # here we establish bubble shapes with alpha and specific size
+  scale_fill_distiller(palette = "BuPu")               # color bubbles with this palette
+```
+## Paletteer
+https://emilhvitfeldt.github.io/paletteer/
+
+#### Sequential Continuous Scale
+```{r}
+my_parks_palette <- NatParksPalettes::natparks.pals(name = "WindCave", n = 20, type = "continuous")
+
+cont_color_plot +
+  scale_color_gradientn(colors = rev(my_parks_palette))
+```
+#### Categorical palette
+```{r}
+cat_color_plot +
+  paletteer::scale_color_paletteer_d("calecopal::superbloom3")
+```
+
+```{r}
+ggplot(na.omit(penguins), aes(x = species, fill = sex)) +
+  geom_bar()
+```
+
+```{r}
+ggplot(na.omit(penguins), aes(x = species, fill = sex)) +
+  geom_bar() +
+  scale_fill_hue(c = 70)
+```
+
+```{r}
+
+```
+
